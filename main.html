@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Einzelberechnungen</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/css/toastr.min.css">
+<style>
+    body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        display: grid;
+        grid-template-rows: auto 1fr auto; /* Footer will take remaining space */
+        min-height: 100vh; /* Ensure the body takes up at least the full viewport height */
+    }
+    .container {
+        max-width: 600px;
+        margin: 50px auto;
+        padding: 20px;
+        border: 1px solid #ccc;
+        border-radius: 5px;
+    }
+    label {
+        display: block;
+        margin-bottom: 10px;
+    }
+    input[type="number"] {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        margin-bottom: 15px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        box-sizing: border-box;
+    }
+
+    button {
+        padding: 10px 20px;
+        background-color: #564caf;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        width: 100%;
+    }
+    button:hover {
+        background-color: #aba1ff;
+    }
+    .accordion {
+        background-color: #f9f9f9;
+        color: #333;
+        cursor: pointer;
+        padding: 10px 20px;
+        margin: 10px 0;
+        border: 1px solid #ccc;
+        border-radius: 4px; 
+        text-align: left;
+        font-size: 16px; 
+        transition: background-color 0.4s ease;
+    }
+
+    .accordion:hover, .accordion.active {
+        background-color: #e7e7e7; 
+    }
+
+    .panel {
+        display: none; 
+        background-color: white; 
+        padding: 0 20px 20px; 
+        border: 1px solid #ccc; 
+        border-top: none; 
+    }
+    select {
+        width: 100%; 
+        padding: 8px; 
+        margin-top: 5px;
+        margin-bottom: 15px; 
+        border: 1px solid #ccc; 
+        border-radius: 4px; 
+        box-sizing: border-box; 
+        background-color: white; 
+        font-family: Arial, sans-serif; 
+        color: #333; 
+    }
+
+    select:focus {
+        border-color: #564caf; 
+        outline: none; 
+    }
+    footer {
+        background-color: #414141;
+        color: #fff;
+        padding: 5px;
+        text-align: center;
+    }
+
+</style>
+</head>
+<body>
+    <div class="container">
+        <h1 align="center">--------------------------------------------------------</h1>
+        <h1 align="center">Einzelberechnungen</h1>
+        <h1 align="center">--------------------------------------------------------</h1>
+        <div class="accordion" onclick="toggleAccordion('estSection')">Einkommensteuer</div>
+        <div id="estSection" class="panel">
+        <!-- Rinder -->
+            <label for="income">Einkommen:</label>
+            <input type="number" id="income" placeholder="Einkommen eingeben">
+            <label for="year">Steuerjahr:</label>
+            <select id="year">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <!-- Add options for other years if needed -->
+            </select>
+            <button onclick="calculateTax()">Steuer berechnen</button>
+        </div>
+
+        <div class="accordion" onclick="toggleAccordion('svSection')">Sozialversicherung</div>
+        <div id="svSection" class="panel">
+        <!-- Schafe -->
+            <label for="sheep_under_6_months">Lämmer bis sechs Monate:</label>
+            <input type="number" id="sheep_under_6_months">
+            <label for="sheep_6_12_months">Schafe sechs Monate bis ein Jahr:</label>
+            <input type="number" id="sheep_6_12_months">
+            <label for="sheep_over_1_year">Schafe über ein Jahr:</label>
+            <input type="number" id="sheep_over_1_year">
+        </div>
+        
+        <div class="accordion" onclick="toggleAccordion('gfbSection')">Gewinnfreibetrag</div>
+        <div id="gfbSection" class="panel">
+            <label for="basis">Bemessungsgrundlage:</label>
+            <input type="number" id="basis" placeholder="Enter your Bemessungsgrundlage">
+            <label for="gewinnfreibetrag-year">Steuerjahr:</label>
+            <select id="gewinnfreibetrag-year">
+                <option value="2024">2024</option>
+                <option value="2023">2023</option>
+                <option value="2022">2022</option>
+                <!-- Add options for other years if needed -->
+            </select>
+            <button onclick="calculateGewinnfreibetrag()">Gewinnfreibetrag berechnen</button>
+            <div id="gewinnfreibetrag-result"></div>
+        </div>         
+    </div>
+    <footer>
+        <p>&copy; 2024 Andreas Pany</p>
+    </footer>    
+<!-- Toast Notification Import-->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/js/toastr.min.js"></script>
+	<script>
+		toastr.options = {
+			progressBar: true, // Zeigt einen Fortschrittsbalken an
+			preventDuplicates: true, // Verhindert doppelte Nachrichten
+			newestOnTop: true, // Neueste Nachrichten oben anzeigen
+			timeOut: 20000, // Die Benachrichtigung bleibt bestehen, bis sie aktiv geschlossen wird
+			tapToDismiss: false // Deaktiviert das Schließen der Benachrichtigung durch Klicken irgendwo darauf
+		};
+		
+		function toggleAccordion(sectionId) {
+			var section = document.getElementById(sectionId);
+			if (section.style.display === "block") {
+				section.style.display = "none";
+			} else {
+				section.style.display = "block";
+			}
+		}
+        function calculateIncomeTax(income, year) {
+            let tax = 0;
+            let taxBrackets = [];
+            let taxRates = [];
+
+            switch (year) {
+                case '2024':
+                    taxBrackets = [0,12816, 20818, 34513, 66612, 99266];
+                    taxRates = [0,0.2, 0.3, 0.40, 0.48, 0.5];
+                    break;
+                case '2023':
+                    taxBrackets = [0,11693, 19134, 32075, 62080, 93120];
+                    taxRates = [0,0.2, 0.3, 0.41, 0.48, 0.5];
+                    break;
+                case '2022':
+                    taxBrackets = [0,11000, 18000, 31000, 60000, 90000];
+                    taxRates = [0,0.2, 0.3, 0.42, 0.48, 0.5];
+                    break;
+                default:
+                    taxBrackets = [0,11000, 18000, 31000, 60000, 90000];
+                    taxRates = [0,0.2, 0.3, 0.42, 0.48, 0.5];
+                    break;
+                // Add cases for other years as needed
+            }
+
+            for (let i = taxBrackets.length - 1; i >= 0; i--) {
+                if (income > taxBrackets[i]) {
+                    tax += (income - taxBrackets[i]) * taxRates[i];
+                    income = taxBrackets[i];
+                }
+            }
+
+            return Math.round(tax);
+        }
+
+        function calculateTax() {
+            const income = parseFloat(document.getElementById('income').value);
+            const year = document.getElementById('year').value;
+            const tax = calculateIncomeTax(income, year);
+            toastr.success(`Your income tax for ${year} is: ${tax}`);
+        }
+
+        function calculateGewinnfreibetrag() {
+            const basis = parseFloat(document.getElementById('basis').value);
+            const year = document.getElementById('gewinnfreibetrag-year').value;
+            const gewinnfreibetrag = Gewinnfreibetrag(basis, year);
+            toastr.success(`Your Gewinnfreibetrag for ${year} is: <br>${gewinnfreibetrag}`);
+        }
+
+        function Gewinnfreibetrag(Bemessungsgrundlage, year) {
+            let SCHWELLE1, SCHWELLE2, SCHWELLE3, SCHWELLE4;
+            let PROZENT1, PROZENT2, PROZENT3, PROZENT4;
+            
+            // Define thresholds and percentages based on the year
+            switch (year) {
+                case '2024':
+                    SCHWELLE1 = 33000;
+                    SCHWELLE2 = 145000;
+                    SCHWELLE3 = 175000;
+                    SCHWELLE4 = 230000;
+                    PROZENT1 = 0.15;
+                    PROZENT2 = 0.13;
+                    PROZENT3 = 0.07;
+                    PROZENT4 = 0.045;
+                    break;
+                case '2023':
+                    SCHWELLE1 = 30000;
+                    SCHWELLE2 = 145000;
+                    SCHWELLE3 = 175000;
+                    SCHWELLE4 = 230000;
+                    PROZENT1 = 0.15;
+                    PROZENT2 = 0.13;
+                    PROZENT3 = 0.07;
+                    PROZENT4 = 0.045;
+                    break;
+                case '2022':
+                    SCHWELLE1 = 30000;
+                    SCHWELLE2 = 145000;
+                    SCHWELLE3 = 175000;
+                    SCHWELLE4 = 230000;
+                    PROZENT1 = 0.15;
+                    PROZENT2 = 0.13;
+                    PROZENT3 = 0.07;
+                    PROZENT4 = 0.045;
+                    break;
+                // Add cases for other years as needed
+                default:
+                    // Use default values for any year not specified
+                    SCHWELLE1 = 30000;
+                    SCHWELLE2 = 145000;
+                    SCHWELLE3 = 175000;
+                    SCHWELLE4 = 230000;
+                    PROZENT1 = 0.15;
+                    PROZENT2 = 0.13;
+                    PROZENT3 = 0.07;
+                    PROZENT4 = 0.045;
+                    break;
+            }
+
+            let Freibetrag = 0;
+            
+            // Calculation of the tax-free allowance based on the given thresholds and percentages
+            if (Bemessungsgrundlage <= SCHWELLE1 && Bemessungsgrundlage > 0) {
+                Freibetrag = Bemessungsgrundlage * PROZENT1;
+            } else if (Bemessungsgrundlage <= SCHWELLE1 + SCHWELLE2) {
+                Freibetrag = SCHWELLE1 * PROZENT1 + (Bemessungsgrundlage - SCHWELLE1) * PROZENT2;
+            } else if (Bemessungsgrundlage <= SCHWELLE1 + SCHWELLE2 + SCHWELLE3) {
+                Freibetrag = SCHWELLE1 * PROZENT1 + SCHWELLE2 * PROZENT2 + (Bemessungsgrundlage - SCHWELLE1 - SCHWELLE2) * PROZENT3;
+            } else if (Bemessungsgrundlage <= SCHWELLE1 + SCHWELLE2 + SCHWELLE3 + SCHWELLE4) {
+                Freibetrag = SCHWELLE1 * PROZENT1 + SCHWELLE2 * PROZENT2 + SCHWELLE3 * PROZENT3 + (Bemessungsgrundlage - SCHWELLE1 - SCHWELLE2 - SCHWELLE3) * PROZENT4;
+            } else if (Bemessungsgrundlage < 0) {
+                Freibetrag = 0;
+            } else {
+                Freibetrag = 45950; // Maximum amount of the tax-free allowance
+            }
+            
+            return Freibetrag;
+        }
+	</script>
+
+</body>
+</html>
